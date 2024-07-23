@@ -1,0 +1,261 @@
+ <!-- vue3 JS & CSS files -->
+ <script type="text/javascript" src="<?= $this->helper->basePath('/js/plugin/vue3/vue.global.min.js'); ?>"></script>
+ <link href="<?= $this->helper->basePath('/js/plugin/elementplus/index.min.css'); ?>" rel="stylesheet" type="text/css">
+ <script type="text/javascript" src="<?= $this->helper->basePath('/js/plugin/elementplus/index.full.min.js'); ?>"></script>
+ <script type="text/javascript" src="<?= $this->helper->basePath('/js/plugin/elementplus/zh-cn.min.js'); ?>"></script> 
+ <script type="text/javascript" src="<?= $this->helper->basePath('/js/plugin/axios/axios.min.js'); ?>"></script>
+ <script type="text/javascript" src="<?= $this->helper->basePath('/js/plugin/moment/moment.min.js'); ?>"></script> 
+ <script type="text/javascript" src="<?= $this->helper->basePath('/js/plugin/vue3/hooks/list.js'); ?>"></script>
+ <script type="text/javascript" src="<?= $this->helper->basePath('/js/plugin/functional/forecast.js'); ?>"></script>
+
+ <div id="app"> 
+             <el-form ref="queryRef" :model="queryForm" inline label-width="100px">
+                 <el-row>
+                     <el-col :xl="25" :lg="6" :md="8" :sm="12">
+                         <el-form-item label="名称" prop="name">
+                            <el-input v-model="queryForm.name" />
+                         </el-form-item>
+                     </el-col> 
+                     <el-col :xl="25" :lg="6" :md="8" :sm="12">
+                         <div class="searchOpreaBox">
+                             <el-button type="primary" @click="handleQuery">搜索</el-button>
+                             <el-button @click="resetQuery">重置</el-button>
+                         </div>
+                     </el-col>
+                 </el-row>
+                 <el-row :gutter="10" class="mb8">
+                     <el-col :span="1.5">
+                         <el-button type="primary" @click="handleAdd">新增</el-button>
+                     </el-col> 
+                     <el-col :span="1.5">
+                         <el-button type="danger" plain :disabled="!multiple" @click="handleDelete">删除</el-button>
+                     </el-col>
+                 </el-row>
+             </el-form> 
+             <el-row class="">
+                 <el-col>
+                     <el-table :data="tableData" v-loading="loading" @selection-change="handleSelectionChange">
+                         <el-table-column type="selection" width="50" align="center"> </el-table-column>
+                         <el-table-column label="姓名" align="center" prop="name"></el-table-column>
+                         <el-table-column label="年龄" align="center" prop="age"></el-table-column>
+                     </el-table>
+                 </el-col>
+             </el-row>
+         <el-pagination background layout="total,sizes,->,prev, pager, next" :current-page="page.currentPage" :page-size="page.pageSize" :page-sizes="page.pageSizes" :pager-count="page.pagerCount" :total="page.total" @size-change="handleSizeChange" @current-change="handleCurrentChange"></el-pagination>
+     <el-dialog title="新增/修改" v-model="open" width="500px" :close-on-click-modal="false">
+         <el-form v-loading="postLoading" ref="postRef" :model="postForm" :rules="postRules" label-width="80px">
+             <el-row>
+                 <el-col>
+                     <el-form-item label="姓名" prop="name">
+                         <el-input v-model="postForm.name" />
+                     </el-form-item>
+                 </el-col> 
+                 <el-col>
+                     <el-form-item label="年龄" prop="range"> 
+                            <el-input v-model="postForm.age" />
+                     </el-form-item>
+                 </el-col> 
+             </el-row>
+         </el-form>
+         <template #footer>
+             <div class="dialog-footer">
+                 <el-button type="primary" @click="submitForm">提交</el-button>
+                 <el-button @click="cancelForm">取 消</el-button>
+             </div>
+         </template>
+     </el-dialog>
+ </div>
+
+ <script type="module"> 
+
+const list2 = (params) => {
+    return new Promise((resolve) => {
+        let res = {
+            data: {
+                code:200,
+                    rows:[
+                    {id:1 , name:'张三1',age:16},
+                    {id:2 , name:'张三2',age:20},
+                    {id:3 , name:'张三3',age:16},
+                    {id:4 , name:'张三4',age:20},
+                    {id:5 , name:'张三5',age:20},
+                    {id:6 , name:'张三6',age:16},
+                    {id:7 , name:'张三7',age:20},
+                    {id:8 , name:'张三8',age:16},
+                    {id:9 , name:'张三9',age:16},
+                    {id:10 , name:'张三10',age:21}, 
+                ],
+                total: 11
+            } 
+        }  
+        resolve(
+            res
+        )
+    })
+} 
+
+     const {
+         createApp,
+         ref,
+         toRefs,
+         reactive,
+         onMounted,
+         getCurrentInstance
+     } = Vue
+     const app = createApp({
+         setup() {
+             //列表查询
+             const queryLisPromise = (query) => {
+                 let queryClone = {
+                     ...state.queryForm,
+                     page: useListObj.page.value.currentPage,
+                     per_page: useListObj.page.value.pageSize, 
+                 } 
+                 return new Promise((resolve, reject) => {
+                     state.loading = true 
+                    //  axios.get('/xxxx/list', { 
+                    //          params: queryClone
+                    //      })
+                         list2(queryClone).then(res => {
+                             state.loading = false  
+                            if(res.data && res.data.code === 200) { 
+                                state.tableData = res.data.rows; 
+                                resolve({
+                                    tableData: res.data.rows,
+                                    total: res.data.total,
+                                });
+                            } else {
+                                reject({
+                                    tableData: [],
+                                    total: 0,
+                                });
+                            } 
+                         })
+                         .catch(error => {
+                             state.loading = false
+                             reject({
+                                 tableData: [],
+                                 total: 0,
+                             });
+                         })
+                 })
+             }
+             const useListObj = useList(queryLisPromise, item => item.id);
+             const state = reactive({
+                 queryForm: {
+                    
+                 },
+                 loading: false,
+                 postLoading: false, 
+                 tableData: [],
+                 postForm: {
+                    name: "",
+                    age: 0,
+                 },
+                 postRules: {
+                     name: [{
+                         required: true,
+                         message: '姓名不能为空',
+                         trigger: 'blur'
+                     }], 
+                 },
+                 open: false,
+                 operate: 'add', // add or edit 
+                 queryRef: null,
+                 postRef: null
+             });
+             const funObj = {
+                 resetQuery() {
+                     state.queryRef.resetFields();
+                     useListObj.resetPage()
+                     useListObj.handleQuery();
+                 }, 
+                 handleAdd() {
+                     if (state.postRef) {
+                         state.postRef.resetFields();
+                     }
+                     state.operate = 'add'
+                     state.open = true;
+                 }, 
+                  submitForm() {  
+                        state.postRef.validate( (baseValid) => { 
+                            ElementPlus.ElMessage.success("新增成功")  
+                         })
+                 },
+                 cancelForm() {
+                     state.open = false;
+                 },
+                 handleDelete () {
+                    console.log(useListObj.ids.value)
+                    ElementPlus.ElMessage.success(`删除${useListObj.ids.value}`)
+                 }
+             } 
+
+             onMounted(() => {
+                useListObj.handleQuery();
+             })
+
+             return {
+                 ...toRefs(state),
+                 ...funObj,
+                 ...useListObj
+             }
+         }
+     })
+     app.use(ElementPlus, {
+         locale: window.ElementPlusLocaleZhCn
+     });
+     app.mount('#app')
+ </script>
+
+ <style scoped>
+     .app-container {
+         padding: 20px 0px 0 0px;
+         background-color: #fff;
+     }
+
+     .el-table .el-table__header-wrapper th,
+     .el-table__fixed-header-wrapper th {
+         word-break: break-word;
+         background-color: rgb(245, 245, 245) !important;
+         color: #515a6e;
+         height: 1.5384616;
+         font-size: 13px;
+         border: 1px solid #ebeef5 !important;
+     }
+
+     .el-table .el-table__body-wrapper {
+         .el-button [class*="el-icon-"]+span {
+             margin-left: 1px;
+         }
+     }
+
+     .table-responsive {
+         margin-top: 10px;
+     }
+
+     .el-form-item {
+         margin-right: 0 !important;
+         width: 100%
+     }
+
+     .el-form-item__content {
+         width: calc(100% - 130px) !important
+     }
+
+     .el-form-item__label {
+         line-height: 42px;
+     } 
+
+     .el-pagination {
+         margin-top: 10px;
+         margin-bottom: 10px;
+         margin-left: 10px;
+         margin-right: 10px;
+     } 
+     .searchOpreaBox {
+         padding: 4px 0;
+         padding-left: 5px;
+
+     }
+ </style>
